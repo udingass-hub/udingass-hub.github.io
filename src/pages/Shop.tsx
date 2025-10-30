@@ -1,27 +1,36 @@
+import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import toolsImage from "@/assets/category-tools.jpg";
-import paintImage from "@/assets/category-paint.jpg";
-import buildingImage from "@/assets/category-building.jpg";
-import gardenImage from "@/assets/category-garden.jpg";
-
-const products = [
-  { id: 1, name: "Professional Power Drill", category: "Tools", price: 129.99, image: toolsImage, badge: "Bestseller" },
-  { id: 2, name: "Premium Paint Set", category: "Paint", price: 89.99, image: paintImage, badge: "New" },
-  { id: 3, name: "Quality Lumber Pack", category: "Building", price: 199.99, image: buildingImage },
-  { id: 4, name: "Garden Tool Kit", category: "Garden", price: 79.99, image: gardenImage, badge: "Sale" },
-  { id: 5, name: "Cordless Drill Set", category: "Tools", price: 159.99, image: toolsImage },
-  { id: 6, name: "Interior Paint Combo", category: "Paint", price: 119.99, image: paintImage, badge: "Popular" },
-  { id: 7, name: "Construction Materials", category: "Building", price: 249.99, image: buildingImage },
-  { id: 8, name: "Professional Garden Set", category: "Garden", price: 149.99, image: gardenImage },
-];
+import { Eye, ShoppingCart } from "lucide-react";
+import { products, Product } from "@/data/products";
+import { ProductDetailDialog } from "@/components/ProductDetailDialog";
+import { useCart } from "@/contexts/CartContext";
 
 const categories = ["All", "Tools", "Paint", "Building", "Garden"];
 
 const Shop = () => {
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { addToCart } = useCart();
+
+  const filteredProducts = selectedCategory === "All"
+    ? products
+    : products.filter((product) => product.category === selectedCategory);
+
+  const handleViewDetails = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDialogOpen(true);
+  };
+
+  const handleQuickAddToCart = (product: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    addToCart(product, 1);
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -45,13 +54,18 @@ const Shop = () => {
               {categories.map((category) => (
                 <Button
                   key={category}
-                  variant={category === "All" ? "default" : "outline"}
+                  variant={category === selectedCategory ? "default" : "outline"}
                   size="sm"
+                  onClick={() => setSelectedCategory(category)}
+                  data-testid={`filter-${category.toLowerCase()}`}
                 >
                   {category}
                 </Button>
               ))}
             </div>
+            <p className="text-sm text-muted-foreground mt-3" data-testid="text-product-count">
+              Menampilkan {filteredProducts.length} produk
+            </p>
           </div>
         </section>
 
@@ -59,8 +73,13 @@ const Shop = () => {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <Card key={product.id} className="group overflow-hidden hover:shadow-[var(--shadow-strong)] transition-all duration-300">
+              {filteredProducts.map((product) => (
+                <Card 
+                  key={product.id} 
+                  className="group overflow-hidden hover:shadow-[var(--shadow-strong)] transition-all duration-300 cursor-pointer"
+                  onClick={() => handleViewDetails(product)}
+                  data-testid={`card-product-${product.id}`}
+                >
                   <div className="relative overflow-hidden aspect-square">
                     <img
                       src={product.image}
@@ -72,13 +91,37 @@ const Shop = () => {
                         {product.badge}
                       </Badge>
                     )}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="gap-2"
+                        data-testid={`button-view-details-${product.id}`}
+                      >
+                        <Eye className="h-4 w-4" />
+                        Lihat Detail
+                      </Button>
+                    </div>
                   </div>
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
-                    <h3 className="font-semibold mb-2 text-base">{product.name}</h3>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl font-bold text-primary">${product.price}</span>
-                      <Button size="sm" variant="default">Add to Cart</Button>
+                    <h3 className="font-semibold mb-2 text-base line-clamp-2">{product.name}</h3>
+                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{product.description}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xl font-bold text-primary" data-testid={`text-price-${product.id}`}>
+                          ${product.price}
+                        </span>
+                        <p className="text-xs text-muted-foreground">Stok: {product.stock}</p>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="default"
+                        onClick={(e) => handleQuickAddToCart(product, e)}
+                        data-testid={`button-quick-add-${product.id}`}
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -89,6 +132,12 @@ const Shop = () => {
       </main>
 
       <Footer />
+      
+      <ProductDetailDialog
+        product={selectedProduct}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+      />
     </div>
   );
 };

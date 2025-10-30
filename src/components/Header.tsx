@@ -1,12 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Search, Menu, Home, Wrench, Briefcase, Info, Phone } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useCart } from "@/contexts/CartContext";
 
 const Header = () => {
   const location = useLocation();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { totalItems } = useCart();
 
   const navLinks = [
     { to: "/", label: "Home", icon: Home },
@@ -49,12 +52,23 @@ const Header = () => {
             size="icon"
             onClick={() => setIsSearchOpen(!isSearchOpen)}
             className="hidden sm:flex"
+            data-testid="button-search"
           >
             <Search className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon">
-            <ShoppingCart className="h-5 w-5" />
-          </Button>
+          <Link to="/cart">
+            <Button variant="ghost" size="icon" className="relative" data-testid="button-cart">
+              <ShoppingCart className="h-5 w-5" />
+              {totalItems > 0 && (
+                <Badge 
+                  className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  data-testid="badge-cart-count"
+                >
+                  {totalItems}
+                </Badge>
+              )}
+            </Button>
+          </Link>
 
           {/* Mobile Menu */}
           <Sheet>
